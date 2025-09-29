@@ -1,103 +1,87 @@
-import Image from "next/image";
+'use client';
+
+import AddTask from "@/components/custom/add-task";
+import Timer from "@/components/custom/timer";
+import TodoSection from "@/components/custom/todo-section";
+import UserAvatar from "@/components/custom/user-avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [startPause, setStartPause] = useState(false);
+  const [reset, setReset] = useState(false);
+  const [latestSavedTime, setLatestSavedTime] = useState<string[]>([]);
+  const [currentTime, setCurrentTime] = useState<string>('00:00:00');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // State for task input field
+  const [task, setTask] = useState<string[]>([]);
+
+  const handleReset = () => {
+    setReset(true);
+    setStartPause(false);
+    setTask([]);
+    setTimeout(() => setReset(false), 0);
+  }
+
+  const handleSave = () => {
+    setLatestSavedTime((prev) => [...prev, currentTime])
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-5 grid-rows-5 gap-2 h-screen">
+        
+        {/* container 1 */}
+        <div className="bg-[#d1d5db] rounded-lg col-span-3 ml-2 mt-2">
+          <div>
+            <UserAvatar />
+          </div>
+
+          <div className="p-2 flex gap-1.5 mt-2">
+            <AddTask onAddTask={(task) => setTask((prev) => [...prev, task])} />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* container 2 */}
+        <div className="flex flex-col justify-center items-center bg-[#f3e5f5] rounded-lg col-span-3 row-start-2 row-span-4 ml-2 mb-2">
+          <Timer startPause={ startPause } reset={ reset } onTimeChange={(_, formatted) => setCurrentTime(formatted)} />
+
+            <div>
+              <div className="flex gap-1">
+                <Button variant={`secondary`} onClick={() => setStartPause(!startPause)}>{ startPause ? 'Pause' : 'Start' }</Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant={`secondary`}>Reset</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>You will lose your todo&apos;s and the tracked time.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction asChild>
+                        <Button onClick={handleReset}>Continue</Button>
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              <Button variant={`secondary`} className="w-full mt-1 cursor-pointer" disabled={ currentTime === '00:00:00' } onClick={ handleSave }>Save</Button>
+            </div>
+        </div>
+
+        {/* container 3 */}
+        <div className="bg-[#818cf8] rounded-lg col-span-2 row-span-5 col-start-4 mt-2 mb-2 mr-2">
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel><TodoSection task={task} /></ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel>Bottom</ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+      </div>
+    </>
   );
 }
