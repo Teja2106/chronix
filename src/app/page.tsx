@@ -1,32 +1,45 @@
 'use client';
 
 import AddTask from "@/components/custom/add-task";
+import TaskMetrics from "@/components/custom/task-metrics";
 import Timer from "@/components/custom/timer";
-import TodoSection from "@/components/custom/todo-section";
+import TodoSection, { Task } from "@/components/custom/todo-section";
 import UserAvatar from "@/components/custom/user-avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
+import type { Session } from "@/components/custom/task-metrics";
 
 export default function Home() {
   const [startPause, setStartPause] = useState(false);
   const [reset, setReset] = useState(false);
-  const [latestSavedTime, setLatestSavedTime] = useState<string[]>([]);
   const [currentTime, setCurrentTime] = useState<string>('00:00:00');
+
+  console.log(currentTime);
 
   // Additional state for task and time
   const [taskWithTime, setTaskWithTime] = useState<{ text: string; savedTime: string }[]>([]);
 
+  // Full task state sync with Todo section
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+
+  // Session State
+  const [session, setSession] = useState<Session[]>([]);
+
   // State to control Reset Alert Dialog manually
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = (clearSession: boolean) => {
     setReset(true);
     setStartPause(false);
     setTaskWithTime([]);
-    setLatestSavedTime([]);
+
+    if (clearSession) {
+      setSession([]);
+    }
+
     setTimeout(() => setReset(false), 0);
     setIsResetDialogOpen(false);
   }
@@ -42,7 +55,17 @@ export default function Home() {
 
   // Functionality to save the data (modification needed)
   const handleSave = () => {
-    setLatestSavedTime((prev) => [...prev, currentTime])
+    if (currentTime === '00:00:00') return;
+
+    const newSession: Session = {
+      id: `session_${session.length + 1}`,
+      latestSavedTime: currentTime,
+      tasks: allTasks
+    };
+
+    setSession((prev) => [...prev, newSession]);
+
+    handleReset(false);
   }
 
   // Keybind functionality (Global keyboard shortcut)
@@ -65,6 +88,12 @@ export default function Home() {
       if (event.altKey && event.key.toLowerCase() === 's') {
         event.preventDefault();
         if (currentTime !== '00:00:00') handleSave();
+      }
+
+      if (event.key === 'Escape') {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
       }
     }
 
@@ -123,7 +152,7 @@ export default function Home() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction asChild>
-                      <Button onClick={handleReset}>Continue</Button>
+                      <Button onClick={() => handleReset(true)}>Continue</Button>
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -143,16 +172,12 @@ export default function Home() {
         {/* container 3 */}
         <div className="bg-[#818cf8] rounded-lg col-span-2 row-span-5 col-start-4 mt-2 mb-2 mr-2">
           <ResizablePanelGroup direction="vertical">
-            <ResizablePanel><TodoSection taskWithTime={taskWithTime} currentTime={currentTime} /></ResizablePanel>
+            <ResizablePanel>
+              <TodoSection taskWithTime={taskWithTime} currentTime={currentTime} onTaskChange={setAllTasks} />
+            </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel>
-              <div className="flex gap-1">
-                <ul className="list-inside list-disc">
-                  { latestSavedTime.map((time, index) => (
-                    <li key={index}>{time}</li>
-                  )) }
-                </ul>
-              </div>
+              <TaskMetrics sessions={session} />
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
