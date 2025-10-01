@@ -59,7 +59,7 @@ export default function Home() {
 
     const newSession: Session = {
       id: `session_${session.length + 1}`,
-      latestSavedTime: currentTime,
+      workingDuration: currentTime,
       tasks: allTasks
     };
 
@@ -177,7 +177,7 @@ export default function Home() {
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel>
-              <TaskMetrics sessions={session} />
+              <TaskMetrics sessions={session} tasks={allTasks} />
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>

@@ -5,11 +5,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 export type Task = {
     text: string;
     completed: boolean;
+
+    // Chronix Timestamp
     createdAt: string;
     completedAt?: string;
-    savedTime: string; // Chronix Timer [Added]
-    checkedAt?: string; // Chronix Timer [Checked]
+    savedTime: string;
+    checkedAt?: string;
     priority?: string;
+    coldAt?: string;
+    activeAt?: string;
+    doneAt?: string;
+
+    // System Timestamp
+    systemCreatedAt?: string;
+    systemCompletedAt?: string;
+    systemColdAt?: string;
+    systemActiveAt?: string;
+    systemDoneAt?: string;
 };
 
 export default function TodoSection({ taskWithTime, currentTime, onTaskChange }: { taskWithTime: { text: string; savedTime: string }[]; currentTime: string; onTaskChange?: (tasks: Task[]) => void }) {
@@ -19,21 +31,35 @@ export default function TodoSection({ taskWithTime, currentTime, onTaskChange }:
         setTasks((prevTask) => {
             const existingMap = new Map(prevTask.map(t => [t.text, t]));
 
+            const nowSystem = new Date().toLocaleTimeString();
+
             return taskWithTime.map((t) => {
                 const existing = existingMap.get(t.text);
 
                 return {
                     text: t.text,
                     completed: existing?.completed ?? false,
-                    createdAt: existing?.createdAt ?? new Date().toLocaleTimeString(),
+
+                    // Chronix
+                    createdAt: existing?.createdAt ?? currentTime,
                     completedAt: existing?.completedAt,
-                    savedTime: t.savedTime, // Chronix [Added]
-                    checkedAt: existing?.checkedAt, // Chornix [Checked]
-                    priority: existing?.priority ?? 'cold'
+                    savedTime: t.savedTime,
+                    checkedAt: existing?.checkedAt,
+                    priority: existing?.priority ?? 'cold',
+                    coldAt: existing?.coldAt ?? currentTime,
+                    activeAt: existing?.activeAt,
+                    doneAt: existing?.doneAt,
+
+                    // System
+                    systemCreatedAt: existing?.systemCreatedAt ?? nowSystem,
+                    systemCompletedAt: existing?.systemCompletedAt,
+                    systemColdAt: existing?.systemColdAt ?? nowSystem,
+                    systemActiveAt: existing?.systemActiveAt,
+                    systemDoneAt: existing?.systemDoneAt
                 }
             })
         })
-    }, [taskWithTime]);
+    }, [taskWithTime, currentTime]);
 
     useEffect(() => {
         if (onTaskChange) {
@@ -42,13 +68,72 @@ export default function TodoSection({ taskWithTime, currentTime, onTaskChange }:
     }, [tasks, onTaskChange]);
 
     const toggleTask = (index: number) => {
-        setTasks((prev) => prev.map((t, i) => i === index ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toLocaleTimeString() : undefined, checkedAt: !t.completed ? currentTime : undefined, priority: !t.completed ? 'done' : 'cold' } : t
-        ));
-    }
+        setTasks((prev) =>
+            prev.map((t, i) => {
+                if (i !== index) return t;
+
+                const nowSystem = new Date().toLocaleTimeString();
+
+                return {
+                    ...t,
+                    completed: !t.completed,
+                    completedAt: !t.completed ? currentTime : undefined,
+                    checkedAt: !t.completed ? currentTime : undefined,
+                    priority: !t.completed ? 'done' : 'cold',
+                    doneAt: !t.completed ? currentTime : undefined,
+
+                    // System update
+                    systemCompletedAt: !t.completed ? nowSystem : undefined,
+                    systemDoneAt: !t.completed ? nowSystem : undefined,
+                    systemColdAt: t.completed ? nowSystem : t.systemColdAt,
+                }
+            })
+        )
+    };
 
     const updatePriority = (index: number, value: string) => {
-        setTasks(prev =>
-            prev.map((t, i) => (i === index ? { ...t, priority: value, completed: value === 'done' ? true : t.completed, completedAt: value === 'done' ? new Date().toLocaleTimeString() : t.completedAt, checkedAt: value === 'done' ? currentTime : t.checkedAt } : t))
+        setTasks((prev) =>
+            prev.map((t, i) => {
+                if (i !== index) return t;
+
+                const nowSystem = new Date().toLocaleTimeString();
+                if (value === 'cold') {
+                    return {
+                        ...t,
+                        priority: 'cold',
+                        coldAt: currentTime,
+                        systemColdAt: nowSystem,
+                        completed: false
+                    }
+                }
+
+                if (value === 'active') {
+                    return { 
+                        ...t, 
+                        priority: 'active', 
+                        activeAt: currentTime, 
+                        systemActiveAt: nowSystem,
+                        completed: false
+                    }
+                }
+
+                if (value === 'done') {
+                    return {
+                        ...t,
+                        priority: 'done',
+                        completed: true,
+                        completedAt: currentTime,
+                        checkedAt: currentTime,
+                        doneAt: currentTime,
+
+                        // System Update
+                        systemCompletedAt: nowSystem,
+                        systemDoneAt: nowSystem
+                    }
+                }
+
+                return t;
+            })
         )
     }
 
