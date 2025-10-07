@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Checkbox } from "../ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { ButtonGroup } from "../ui/button-group";
+import { Button } from "../ui/button";
+import { Pause, Play } from "lucide-react";
 
 export type Task = {
     text: string;
@@ -10,27 +11,23 @@ export type Task = {
     createdAt: string;
     completedAt?: string;
     savedTime: string;
-    checkedAt?: string;
-    priority?: string;
-    coldAt?: string;
+    priority?: 'pending' | 'active' | 'done';
     activeAt?: string;
     doneAt?: string;
 
     // System Timestamp
     systemCreatedAt?: string;
     systemCompletedAt?: string;
-    systemColdAt?: string;
     systemActiveAt?: string;
     systemDoneAt?: string;
 };
 
-export default function TodoSection({ taskWithTime, currentTime, onTaskChange }: { taskWithTime: { text: string; savedTime: string }[]; currentTime: string; onTaskChange?: (tasks: Task[]) => void }) {
+export default function TodoSection({ taskWithTime, currentTime, onTaskChange, startPause, onToggleStartPause, onGlobalPause }: { taskWithTime: { text: string; savedTime: string }[]; currentTime: string; onTaskChange?: (tasks: Task[]) => void; startPause: boolean; onToggleStartPause: () => void; onGlobalPause?: () => void }) {
     const [tasks, setTasks] = useState<Task[]>([]);
 
     useEffect(() => {
-        setTasks((prevTask) => {
-            const existingMap = new Map(prevTask.map(t => [t.text, t]));
-
+        setTasks((prevTasks) => {
+            const existingMap = new Map(prevTasks.map((t) => [t.text, t]));
             const nowSystem = new Date().toLocaleTimeString();
 
             return taskWithTime.map((t) => {
@@ -44,21 +41,18 @@ export default function TodoSection({ taskWithTime, currentTime, onTaskChange }:
                     createdAt: existing?.createdAt ?? currentTime,
                     completedAt: existing?.completedAt,
                     savedTime: t.savedTime,
-                    checkedAt: existing?.checkedAt,
-                    priority: existing?.priority ?? 'cold',
-                    coldAt: existing?.coldAt ?? currentTime,
+                    priority: existing?.priority ?? "pending",
                     activeAt: existing?.activeAt,
                     doneAt: existing?.doneAt,
 
                     // System
                     systemCreatedAt: existing?.systemCreatedAt ?? nowSystem,
                     systemCompletedAt: existing?.systemCompletedAt,
-                    systemColdAt: existing?.systemColdAt ?? nowSystem,
                     systemActiveAt: existing?.systemActiveAt,
-                    systemDoneAt: existing?.systemDoneAt
-                }
-            })
-        })
+                    systemDoneAt: existing?.systemDoneAt,
+                };
+            });
+        });
     }, [taskWithTime, currentTime]);
 
     useEffect(() => {
@@ -67,74 +61,71 @@ export default function TodoSection({ taskWithTime, currentTime, onTaskChange }:
         }
     }, [tasks, onTaskChange]);
 
-    const toggleTask = (index: number) => {
-        setTasks((prev) =>
-            prev.map((t, i) => {
-                if (i !== index) return t;
+    useEffect(() => {
+        if (startPause) {
+            const activeExists = tasks.some((t) => t.priority === 'active' && !t.completed);
 
-                const nowSystem = new Date().toLocaleTimeString();
-
-                return {
-                    ...t,
-                    completed: !t.completed,
-                    completedAt: !t.completed ? currentTime : undefined,
-                    checkedAt: !t.completed ? currentTime : undefined,
-                    priority: !t.completed ? 'done' : 'cold',
-                    doneAt: !t.completed ? currentTime : undefined,
-
-                    // System update
-                    systemCompletedAt: !t.completed ? nowSystem : undefined,
-                    systemDoneAt: !t.completed ? nowSystem : undefined,
-                    systemColdAt: t.completed ? nowSystem : t.systemColdAt,
+            if (!activeExists) {
+                const firstPendingIndex = tasks.findIndex((t) => t.priority !== 'done');
+                if (firstPendingIndex !== -1) {
+                    activateTask(firstPendingIndex);
                 }
-            })
-        )
-    };
+            }
+        }
+    });
 
-    const updatePriority = (index: number, value: string) => {
+    const activateTask = (index: number) => {
         setTasks((prev) =>
             prev.map((t, i) => {
-                if (i !== index) return t;
-
                 const nowSystem = new Date().toLocaleTimeString();
-                if (value === 'cold') {
+
+                if (i === index) {
                     return {
                         ...t,
-                        priority: 'cold',
-                        coldAt: currentTime,
-                        systemColdAt: nowSystem,
+                        priority: 'active',
+                        activeAt: t.activeAt ?? currentTime,
+                        systemActiveAt: t.systemActiveAt ?? nowSystem,
                         completed: false
                     }
                 }
 
-                if (value === 'active') {
-                    return { 
-                        ...t, 
-                        priority: 'active', 
-                        activeAt: currentTime, 
-                        systemActiveAt: nowSystem,
-                        completed: false
-                    }
-                }
-
-                if (value === 'done') {
+                if (i !== index && t.priority === 'active') {
                     return {
                         ...t,
-                        priority: 'done',
-                        completed: true,
-                        completedAt: currentTime,
-                        checkedAt: currentTime,
-                        doneAt: currentTime,
-
-                        // System Update
-                        systemCompletedAt: nowSystem,
-                        systemDoneAt: nowSystem
+                        priority: 'pending'
                     }
                 }
 
                 return t;
             })
-        )
+        );
+
+        if (!startPause) onToggleStartPause();
+    }
+
+    const completedTask = (index: number) => {
+        if (onGlobalPause) onGlobalPause();
+        setTasks((prev) => {
+            const nowSystem = new Date().toLocaleTimeString();
+
+            return prev.map((t, i) => {
+                if (i === index) {
+                    return {
+                        ...t,
+                        priority: 'done',
+                        completed: true,
+                        completedAt: currentTime,
+                        doneAt: currentTime,
+
+                        // System Timestamp
+                        systemCompletedAt: nowSystem,
+                        systemDoneAt: nowSystem
+                    };
+                }
+
+                return t;
+            })
+        });
     }
 
     return (
@@ -142,27 +133,53 @@ export default function TodoSection({ taskWithTime, currentTime, onTaskChange }:
             <div className="w-full p-2 mt-2.5">
                 <p className="text-3xl ">Tasks To Complete</p>
                 <ul className="mt-5">
-                    {
-                        tasks.map((t, index) => (
-                            <li key={index} className="flex gap-2 mt-2 items-center text-gray-100 group hover:bg-gray-50 p-1.5 rounded-sm">
+                    {tasks.map((t, index) => {
+                        const isActive = t.priority === "active";
+
+                        return (
+                            <li
+                                key={index}
+                                className="flex gap-2 mt-2 items-center text-gray-100 p-1.5 rounded-sm"
+                            >
                                 <div className="flex items-center gap-2">
-                                    <Checkbox checked={t.completed} onCheckedChange={() => toggleTask(index)} className="dark:data-[state=checked]:bg-gray-200" />
-                                    <p className={`${t.completed ? 'line-through text-gray-700' : 'text-white group-hover:text-gray-400'}`}>{t.text} </p>
+                                    <p
+                                        className={`${t.completed
+                                                ? "line-through text-gray-700"
+                                                : "text-white"
+                                            }`}
+                                    >
+                                        {t.text}
+                                    </p>
                                 </div>
 
-                                <Select value={t.priority} onValueChange={(value) => updatePriority(index, value)}>
-                                    <SelectTrigger className="ml-auto w-[130px] data-[placeholder]:text-black *:data-[slot=select-value]:text-black">
-                                        <SelectValue placeholder="Priortiy" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cold">Cold</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="done">Done</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <ButtonGroup className="ml-auto">
+                                    <Button
+                                        className="border bg-[#d1d5db]"
+                                        onClick={() => {
+                                            if (!isActive) {
+                                                activateTask(index);
+                                            } else {
+                                                onToggleStartPause(); // toggle pause/resume
+                                            }
+                                        }}
+                                    >
+                                        {isActive && startPause ? (
+                                            <Pause />
+                                        ) : (
+                                            <Play />
+                                        )}
+                                    </Button>
+
+                                    <Button
+                                        className="border bg-[#d1d5db]"
+                                        onClick={() => completedTask(index)}
+                                    >
+                                        Done
+                                    </Button>
+                                </ButtonGroup>
                             </li>
-                        ))
-                    }
+                        );
+                    })}
                 </ul>
             </div>
         </>

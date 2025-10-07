@@ -10,14 +10,11 @@ import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
-import type { Session } from "@/components/custom/task-metrics";
 
 export default function Home() {
   const [startPause, setStartPause] = useState(false);
   const [reset, setReset] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('00:00:00');
-
-  console.log(currentTime);
 
   // Additional state for task and time
   const [taskWithTime, setTaskWithTime] = useState<{ text: string; savedTime: string }[]>([]);
@@ -25,20 +22,14 @@ export default function Home() {
   // Full task state sync with Todo section
   const [allTasks, setAllTasks] = useState<Task[]>([]);
 
-  // Session State
-  const [session, setSession] = useState<Session[]>([]);
-
   // State to control Reset Alert Dialog manually
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
-  const handleReset = (clearSession: boolean) => {
+
+  const handleReset = () => {
     setReset(true);
     setStartPause(false);
     setTaskWithTime([]);
-
-    if (clearSession) {
-      setSession([]);
-    }
 
     setTimeout(() => setReset(false), 0);
     setIsResetDialogOpen(false);
@@ -53,19 +44,18 @@ export default function Home() {
     ]);
   }
 
-  // Functionality to save the data (modification needed)
-  const handleSave = () => {
-    if (currentTime === '00:00:00') return;
+  // Global Start Pause button logic
+  const handleGlobalStartPause = () => {
+    const activeTaskExists = allTasks.some((t) => t.priority === 'active' && !t.completed);
 
-    const newSession: Session = {
-      id: `session_${session.length + 1}`,
-      workingDuration: currentTime,
-      tasks: allTasks
-    };
-
-    setSession((prev) => [...prev, newSession]);
-
-    handleReset(false);
+    if (!activeTaskExists) {
+      const firstPendingIndex = allTasks.findIndex((t) => t.priority !== 'done');
+      if (firstPendingIndex !== -1) {
+        setStartPause(true);
+      }
+    } else {
+      setStartPause(prev => !prev);
+    }
   }
 
   // Keybind functionality (Global keyboard shortcut)
@@ -75,19 +65,16 @@ export default function Home() {
       // Start / Pause: Shift + Space
       if (event.shiftKey && event.code === 'Space') {
         event.preventDefault();
-        setStartPause(prev => !prev);
+        
+        if (taskWithTime.length > 0) {
+          handleGlobalStartPause();
+        }
       }
 
       // Reset: Shift + r
       if (event.shiftKey && event.key.toLowerCase() === 'r') {
         event.preventDefault();
         setIsResetDialogOpen(true)
-      }
-
-      // Save Alt + s
-      if (event.altKey && event.key.toLowerCase() === 's') {
-        event.preventDefault();
-        if (currentTime !== '00:00:00') handleSave();
       }
 
       if (event.key === 'Escape') {
@@ -115,7 +102,7 @@ export default function Home() {
           </div>
 
           <div className="p-2 flex gap-1.5 mt-2">
-            <AddTask onAddTask={handleAddTask} disabled={currentTime === '00:00:00'} />
+            <AddTask onAddTask={handleAddTask} />
           </div>
         </div>
 
@@ -127,7 +114,7 @@ export default function Home() {
             <div className="flex gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant={`secondary`} onClick={() => setStartPause(!startPause)}>{startPause ? 'Pause' : 'Start'}</Button>
+                  <Button variant={`secondary`} onClick={handleGlobalStartPause} disabled={taskWithTime.length === 0}>{startPause ? 'Pause' : 'Start'}</Button>
                 </TooltipTrigger>
                 <TooltipContent className="bg-gray-500/50" side="left">
                   <p>shift + space</p>
@@ -136,9 +123,9 @@ export default function Home() {
               <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                  <AlertDialogTrigger asChild>
-                    <Button variant={`secondary`}>Reset</Button>
-                  </AlertDialogTrigger>
+                    <AlertDialogTrigger asChild>
+                      <Button variant={`secondary`}>Reset</Button>
+                    </AlertDialogTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-gray-500/50">
                     <p>shift + r</p>
@@ -152,20 +139,12 @@ export default function Home() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction asChild>
-                      <Button onClick={() => handleReset(true)}>Continue</Button>
+                      <Button onClick={handleReset}>Continue</Button>
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant={`secondary`} className="w-full mt-1 cursor-pointer" disabled={currentTime === '00:00:00'} onClick={handleSave}>Save</Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-500/50">
-                <p>alt + s</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
         </div>
 
@@ -173,11 +152,11 @@ export default function Home() {
         <div className="bg-[#818cf8] rounded-lg col-span-2 row-span-5 col-start-4 mt-2 mb-2 mr-2">
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel>
-              <TodoSection taskWithTime={taskWithTime} currentTime={currentTime} onTaskChange={setAllTasks} />
+              <TodoSection taskWithTime={taskWithTime} currentTime={currentTime} onTaskChange={setAllTasks} startPause={startPause} onToggleStartPause={() => setStartPause(prev => !prev)} onGlobalPause={() => setStartPause(false)} />
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel>
-              <TaskMetrics sessions={session} tasks={allTasks} />
+              <TaskMetrics tasks={allTasks} currentTime={currentTime} />
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>

@@ -1,125 +1,103 @@
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../ui/resizable";
+'use client';
+
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { Task } from "./todo-section";
 
-export type Session = {
-    id: string,
-    workingDuration: string;
+type Props = {
     tasks: Task[];
-}
-
-const calculateChronixDuration = (start?: string, end?: string): string => {
-    if (!start || !end) return "—";
-
-    const [sh, sm, ss] = start.split(":").map(Number);
-    const [eh, em, es] = end.split(":").map(Number);
-
-    const startSeconds = sh * 3600 + sm * 60 + ss;
-    const endSeconds = eh * 3600 + em * 60 + es;
-    const diff = endSeconds - startSeconds;
-
-    if (diff < 0) return "—"; // invalid case (done before active)
-
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-
-    return `${h.toString().padStart(2, "0")}:${m
-        .toString()
-        .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    currentTime: string;
 };
 
-export default function TaskMetrics({ tasks, sessions }: { tasks: Task[]; sessions: Session[] }) {
+// Convert seconds -> HH:MM:SS
+const parseChronix = (time?: string): number | null => {
+    if (!time) return null;
+
+    const [h, m, s] = time.split(':').map(Number);
+    if ([h, m, s].some(isNaN)) return null;
+
+    return h * 3600 + m * 60 + s;
+};
+
+const formatChronix = (sec: number): string => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+export default function TaskMetrics({ tasks, currentTime }: Props) {
+    const chartData = tasks.map((t) => {
+        const activeSec = parseChronix(t.activeAt);
+        const doneSec = parseChronix(t.doneAt);
+
+        if (activeSec === null || doneSec === null) return null;
+
+        return {
+            task: t.text,
+            start: activeSec,
+            end: doneSec,
+            duration: Math.max(0, doneSec - activeSec),
+            activeAt: t.activeAt,
+            doneAt: t.doneAt
+        }
+    }).filter(Boolean) as {
+        task: string;
+        start: number;
+        end: number;
+        duration: number;
+        activeAt: string;
+        doneAt: string;
+    }[];
+
+    const chartConfig = {
+        duration: {
+            label: 'duration',
+            color: 'var(--chart-1)'
+        }
+    } satisfies ChartConfig;
+
+    const maxXAxis = parseChronix(currentTime) ?? 0;
+
     return (
         <>
-            <ResizablePanelGroup direction="horizontal">
-                <ResizablePanel>
-                    <div className="m-2">
-                        <p className="text-xl font-bold mb-2">Live Task Metrics</p>
-                        <ul>
-                            {tasks.length === 0 && <p className="text-sm">No active tasks</p>}
-                            {tasks.map((t, index) => (
-                                <li key={index} className="mb-6 border-b pb-4">
-                                    <p>
-                                        <span className="font-semibold">Task: </span>
-                                        {t.text}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Priority: </span>
-                                        {t.priority}
-                                    </p>
-
-                                    {/* Chronix vs System Timestamps */}
-                                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                                        <div>
-                                            <p className="font-semibold">Chronix Timestamps</p>
-                                            <p>Created At: {t.createdAt}</p>
-                                            <p>Completed At: {t.completedAt ?? "—"}</p>
-                                            <p>Cold At: {t.coldAt ?? "—"}</p>
-                                            <p>Active At: {t.activeAt ?? "—"}</p>
-                                            <p>Done At: {t.doneAt ?? "—"}</p>
-                                            <p>Checked At: {t.checkedAt ?? "—"}</p>
-                                        </div>
-
-                                        <div>
-                                            <p className="font-semibold">System Timestamps</p>
-                                            <p>Created At: {t.systemCreatedAt}</p>
-                                            <p>Completed At: {t.systemCompletedAt ?? "—"}</p>
-                                            <p>Cold At: {t.systemColdAt ?? "—"}</p>
-                                            <p>Active At: {t.systemActiveAt ?? "—"}</p>
-                                            <p>Done At: {t.systemDoneAt ?? "—"}</p>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </ResizablePanel>
-                <ResizableHandle />
-                <ResizablePanel>
-                    <div className="m-2">
-                        <p className="text-xl font-bold mb-2">Saved Sessions</p>
-                        <ul>
-                            {sessions.length === 0 && <p className="text-sm">No sessions saved</p>}
-                            {sessions.map((s) => (
-                                <li key={s.id} className="mb-6 border-b pb-4">
-                                    <p>
-                                        <span className="font-semibold">Session ID: </span>
-                                        {s.id}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold">Working Duration: </span>
-                                        {s.workingDuration}
-                                    </p>
-                                    <div className="mt-3">
-                                        <p className="font-semibold">Tasks:</p>
-                                        <ul className="ml-4 list-disc">
-                                            {s.tasks.map((t, idx) => (
-                                                <li key={idx} className="mt-2">
-                                                    <p>
-                                                        <span className="font-semibold">
-                                                            {t.text}
-                                                        </span>
-                                                    </p>
-                                                    <p>Cold At: {t.coldAt ?? "—"}</p>
-                                                    <p>Active At: {t.activeAt ?? "—"}</p>
-                                                    <p>Done At: {t.doneAt ?? "—"}</p>
-                                                    <p>
-                                                        Duration (Active → Done):{" "}
-                                                        {calculateChronixDuration(
-                                                            t.activeAt,
-                                                            t.doneAt
-                                                        )}
-                                                    </p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </ResizablePanel>
-            </ResizablePanelGroup>
+            <Card className="m-1.5">
+                <CardHeader>
+                    <CardTitle>Task Duration</CardTitle>
+                    <CardDescription>Today&apos;s overall productivity.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {chartData.length === 0 ? (
+                        <p>No completed tasks yet</p>
+                    ) : (
+                        <ChartContainer config={chartConfig}>
+                            <ResponsiveContainer height={'10%'} width={'50%'}>
+                                <BarChart data={chartData} layout="vertical">
+                                    <XAxis type="number" domain={[0, maxXAxis]} tickFormatter={(v) => formatChronix(v)} />
+                                    <YAxis dataKey={'task'} type="category" tickLine={false} axisLine={false} />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent />}
+                                        formatter={(value, name) => {
+                                            if (name === 'duration') {
+                                                return [formatChronix(value as number), 'Duration'];
+                                            }
+                                            if (name === 'start') {
+                                                return [formatChronix(value as number), 'Start'];
+                                            }
+                                            return [value, name];
+                                        }}
+                                    />
+                                    <Bar dataKey={'start'} stackId={'a'} fill="transparent" />
+                                    <Bar dataKey={'duration'} stackId={'a'} fill="var(--color-duration)" radius={5} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+            </Card>
         </>
     )
 }
