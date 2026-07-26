@@ -8,7 +8,7 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
-        setupFiles: './src/config/vite.setup.ts',
+        setupFiles: './src/test/vite.setup.ts',
         alias: {
             '@': path.resolve(__dirname, './src')
         }
