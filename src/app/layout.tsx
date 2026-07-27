@@ -15,8 +15,8 @@ const bitcountSingle = Bitcount_Single({
 const darkerGrotesque = Darker_Grotesque({
   variable: "--font-darker-grotesque",
   subsets: ["latin"],
-  weight: '600',
-})
+  weight: ['600', '700']
+});
 
 export const metadata: Metadata = {
   title: "Chronix",

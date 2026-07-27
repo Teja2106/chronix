@@ -58,12 +58,7 @@ export function AppSidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={cn(
-                                    "flex gap-3 items-center justify-start px-3.5 py-2.5 rounded-xl transition-all duration-200 border border-transparent",
-                                    isActive
-                                        ? "bg-[#231a33] text-[#d3bbfb] font-semibold border-r-[3px] border-r-[#d3bbfb] shadow-[0_0_10px_rgba(211,187,251,0.12)]"
-                                        : "text-zinc-400 hover:bg-[#231a33]/40 hover:text-zinc-200"
-                                )}>
+                                className={cn("flex gap-3 items-center justify-start px-3.5 py-2.5 rounded-xl transition-all duration-200 border border-transparent", isActive ? "bg-[#231a33] text-[#d3bbfb] font-semibold border-r-[3px] border-r-[#d3bbfb] shadow-[0_0_10px_rgba(211,187,251,0.12)]" : "text-zinc-400 hover:bg-[#231a33]/40 hover:text-zinc-200")}>
                                 <div>
                                     <Icon size={24} color={isActive ? "#d3bbfb" : "#94a3b8"} />
                                 </div>
