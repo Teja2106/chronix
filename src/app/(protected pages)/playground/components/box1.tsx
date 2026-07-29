@@ -1,109 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Pause, Play, Square } from "lucide-react";
+import useSessionTimer from "../hooks/useSessionTimer";
 
-export default function TempBox1() {
-    const [isRunning, setIsRunning] = useState(false);
-    const [elapsedMs, setElapsedMs] = useState(0);
-    const [pausedMs, setPausedMs] = useState(0);
-    const [startedAt, setStartedAt] = useState<Date | null>(null);
-
-    const timerRef = useRef<number | null>(null);
-    const pauseTimerRef = useRef<number | null>(null);
-
-    const lastTickRef = useRef(0);
-    const lastPauseTickRef = useRef(0);
-
-    const startWorkingTimer = () => {
-        lastTickRef.current = Date.now();
-
-        timerRef.current = window.setInterval(() => {
-            const now = Date.now();
-
-            setElapsedMs((prev) => prev + (now - lastTickRef.current));
-
-            lastTickRef.current = now;
-        }, 10);
-    };
-
-    const stopWorkingTimer = () => {
-        if (timerRef.current !== null) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    };
-
-    const startPauseTimer = () => {
-        lastPauseTickRef.current = Date.now();
-
-        pauseTimerRef.current = window.setInterval(() => {
-            const now = Date.now();
-
-            setPausedMs((prev) => prev + (now - lastPauseTickRef.current));
-
-            lastPauseTickRef.current = now;
-        }, 1000);
-    };
-
-    const stopPauseTimer = () => {
-        if (pauseTimerRef.current !== null) {
-            clearInterval(pauseTimerRef.current);
-            pauseTimerRef.current = null;
-        }
-    };
-
-    const handlePlayPause = () => {
-        if (!isRunning) {
-            if (!startedAt) {
-                setStartedAt(new Date());
-            }
-
-            stopPauseTimer();
-
-            startWorkingTimer();
-
-            setIsRunning(true);
-        } else {
-            stopWorkingTimer();
-
-            startPauseTimer();
-
-            setIsRunning(false);
-        }
-    };
-
-    const handleStop = () => {
-        stopWorkingTimer();
-        stopPauseTimer();
-
-        setElapsedMs(0);
-        setPausedMs(0);
-        setStartedAt(null);
-        setIsRunning(false);
-    };
-
-    useEffect(() => {
-        return () => {
-            stopWorkingTimer();
-            stopPauseTimer();
-        };
-    }, []);
-
-    function formatStopwatch(ms: number) {
-        const hours = Math.floor(ms / 3600000);
-        const minutes = Math.floor((ms % 3600000) / 60000);
-        const seconds = Math.floor((ms % 60000) / 1000);
-        const centiseconds = Math.floor((ms % 1000) / 10);
-
-        return {
-            hours: String(hours).padStart(2, "0"),
-            minutes: String(minutes).padStart(2, "0"),
-            seconds: String(seconds).padStart(2, "0"),
-            centiseconds: String(centiseconds).padStart(2, "0"),
-        };
-    }
+export default function Box1() {
+    const { isRunning, elapsedMs, pausedMs, startedAt, handlePlayPause, handleStop, formatStopwatch } = useSessionTimer();
 
     const time = formatStopwatch(elapsedMs);
 
@@ -135,10 +37,11 @@ export default function TempBox1() {
 
                 <div className="flex gap-2 self-start">
                     <button
+                        aria-label={ isRunning ? 'Pause session' : 'Start session' }
                         onClick={handlePlayPause}
                         className="bg-white/30 p-2 rounded hover:bg-white/50 transition cursor-pointer"
                     >
-                        {isRunning ? <Pause size={20} /> : <Play size={20} />}
+                        {isRunning ? <Pause size={20} data-testid='pause-icon' /> : <Play size={20} data-testid='start-icon' />}
                     </button>
 
                     <button
@@ -196,9 +99,9 @@ export default function TempBox1() {
                 </div>
 
                 {/* Temporary debug information */}
-                {/* <div className="mt-4 text-sm text-muted-foreground">
+                <div className="mt-4 text-sm text-muted-foreground">
                     Paused Time: {Math.floor(pausedMs / 1000)}s
-                </div> */}
+                </div>
             </div>
         </>
     );
