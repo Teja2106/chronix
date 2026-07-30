@@ -2,7 +2,7 @@ import Box1 from "./components/box1";
 
 export default function Playground() {
     return (
-        <div className="w-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="w-full p-4 sm:p-6 md:p-8">
             {/* Bento Grid: 12-Column Responsive Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 

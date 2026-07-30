@@ -39,7 +39,7 @@ export function AppSidebar() {
                 <p className="font-bitcount-single max-sm:text-3xl 2xl:text-[30px]">Chronix</p>
             </SidebarHeader>
             <SidebarContent>
-                <SidebarGroup>
+                {/* <SidebarGroup>
                     <Button variant={'secondary'}>
                         <div>
                             <Plus />
@@ -48,7 +48,7 @@ export function AppSidebar() {
                             <p>New Session</p>
                         </div>
                     </Button>
-                </SidebarGroup>
+                </SidebarGroup> */}
                 <SidebarGroup className="mt-3 flex flex-col gap-1">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href || (pathname ? pathname.startsWith(`${item.href}/`) : false);
