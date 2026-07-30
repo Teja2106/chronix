@@ -12,7 +12,7 @@ describe('unit test for timer functionality', () => {
         vi.useRealTimers();
     });
 
-    test('test the  workTimer', async () => {
+    test('test the workTimer', async () => {
         const { result } = renderHook(() => useSessionTimer());
 
         act(() => {
@@ -46,5 +46,38 @@ describe('unit test for timer functionality', () => {
         act(() => {
             result.current.stopPauseTimer();
         });
+    });
+
+    test('test the handlePlayPause and handleStop', async () => {
+        const { result } = renderHook(() => useSessionTimer());
+
+        act(() => {
+            result.current.handlePlayPause();
+        });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(4000);
+        });
+
+        expect(result.current.elapsedMs).toBeGreaterThan(3900);
+
+        act(() => {
+            result.current.handlePlayPause();
+        });
+
+        expect(result.current.elapsedMs).toBeGreaterThan(3900);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(8000);
+        });
+
+        expect(result.current.pausedMs).toBeGreaterThan(7900);
+
+        act(() => {
+            result.current.handleStop();
+        });
+
+        expect(result.current.elapsedMs).toBe(0);
+        expect(result.current.pausedMs).toBe(0);
     });
 });

@@ -45,6 +45,7 @@ export default function Box1() {
                     </button>
 
                     <button
+                        aria-label="Stop session"
                         onClick={handleStop}
                         disabled={!startedAt}
                         className={`p-2 rounded transition ${
@@ -53,13 +54,13 @@ export default function Box1() {
                                 : "bg-muted opacity-40 cursor-not-allowed"
                         }`}
                     >
-                        <Square size={20} />
+                        <Square size={20} data-testid='stop-icon' />
                     </button>
                 </div>
             </div>
 
             <div className="lg:text-8xl lg:mt-20">
-                <p className="font-darker-grotesque">
+                <p className="font-darker-grotesque" data-testid='session-timer'>
                     {time.hours}:{time.minutes}:{time.seconds}
                     <span className="lg:text-xl font-darker-grotesque">
                         .{time.centiseconds}
