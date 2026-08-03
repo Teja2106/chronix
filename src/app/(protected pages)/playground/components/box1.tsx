@@ -4,8 +4,15 @@ import { Separator } from "@/components/ui/separator";
 import { Pause, Play, Square } from "lucide-react";
 import useSessionTimer from "../hooks/useSessionTimer";
 
-export default function Box1() {
-    const { isRunning, elapsedMs, pausedMs, startedAt, handlePlayPause, handleStop, formatStopwatch } = useSessionTimer();
+type SessionTimer = ReturnType<typeof useSessionTimer>;
+
+interface Box1Props {
+    session: SessionTimer;
+    projectName: string;
+}
+
+export default function Box1({ session, projectName }: Box1Props) {
+    const { isRunning, elapsedMs, startedAt, handlePlayPause, handleStop, formatStopwatch } = session;
 
     const time = formatStopwatch(elapsedMs);
 
@@ -29,15 +36,15 @@ export default function Box1() {
                     </div>
 
                     <div className="pt-4">
-                        <p className="lg:text-7xl font-darker-grotesque tracking-[1px] font-bold max-sm:text-4xl">
-                            Project Name
+                        <p className="lg:text-6xl font-darker-grotesque tracking-[1px] max-sm:text-4xl">
+                            Project {projectName}
                         </p>
                     </div>
                 </div>
 
                 <div className="flex gap-2 self-start">
                     <button
-                        aria-label={ isRunning ? 'Pause session' : 'Start session' }
+                        aria-label={isRunning ? 'Pause session' : 'Start session'}
                         onClick={handlePlayPause}
                         className="bg-white/30 p-2 rounded hover:bg-white/50 transition cursor-pointer"
                     >
@@ -98,11 +105,6 @@ export default function Box1() {
                         </p>
                     </div>
                 </div>
-
-                {/* Temporary debug information */}
-                {/* <div className="mt-4 text-sm text-muted-foreground">
-                    Paused Time: {Math.floor(pausedMs / 1000)}s
-                </div> */}
             </div>
         </>
     );

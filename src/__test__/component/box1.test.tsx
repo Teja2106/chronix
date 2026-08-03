@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import Box1 from '@/app/(protected pages)/playground/components/box1';
+import useSessionTimer from '@/app/(protected pages)/playground/hooks/useSessionTimer';
+
+function TestWrapper() {
+    const session = useSessionTimer();
+    return <Box1 session={session} projectName="Alpha" />;
+}
 
 describe('Box1', () => {
     beforeEach(() => {
@@ -12,7 +17,7 @@ describe('Box1', () => {
     test('changes Play state to Pause when clicked', async () => {
         const user = userEvent.setup();
 
-        render(<Box1 />);
+        render(<TestWrapper />);
 
         const playButton = screen.getByRole('button', { name: /start session/i });
 
@@ -29,7 +34,7 @@ describe('Box1', () => {
     test('changes Play icon to Pause when clicked', async () => {
         const user = userEvent.setup();
 
-        render(<Box1 />);
+        render(<TestWrapper />);
 
         const playButton = screen.getByRole('button', { name: /start session/i });
         const playIcon = screen.queryByTestId('start-icon');
@@ -53,7 +58,7 @@ describe('Box1', () => {
     test('stop button - initally disabled and reset to 00:00:00.00 when clicked', async () => {
         const user = userEvent.setup();
 
-        render(<Box1 />);
+        render(<TestWrapper />);
 
         const startButton = screen.getByRole('button', { name: /start session/i });
         const stopButton = screen.getByRole('button', { name: /stop session/i });
